@@ -1,0 +1,34 @@
+name: Test dynamic uses with JSON-format with input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Invoke dynamic-uses with JSON-format with input
+        id: action
+        uses: .
+        with:
+          uses: ./tests/fixtures/simple-output-action
+          with: '{"greeting": "json", "name": "works"}'
+
+      - name: Assert outputs JSON contains expected result
+        env:
+          OUTPUTS: ${{ steps.action.outputs.outputs }}
+        run: |
+          echo "outputs: $OUTPUTS"
+          if [ -z "$OUTPUTS" ]; then
+            echo "FAIL: outputs is empty"
+            exit 1
+          fi
+
+          RESULT=$(echo "$OUTPUTS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('result',''))" 2>/dev/null || echo "")
+          echo "result: $RESULT"
+
+          if [ "$RESULT" != "json-works" ]; then
+            echo "FAIL: expected result=json-works, got: $RESULT"
+            exit 1
+          fi
+          echo "PASS"

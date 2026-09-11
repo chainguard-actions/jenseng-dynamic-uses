@@ -1,0 +1,21 @@
+name: Multi Output Action
+description: A fixture action that sets multiple outputs for testing dynamic-uses
+outputs:
+  foo:
+    description: foo output
+    value: ${{ steps.set-outputs.outputs.foo }}
+  count:
+    description: count output
+    value: ${{ steps.set-outputs.outputs.count }}
+  flag:
+    description: flag output
+    value: ${{ steps.set-outputs.outputs.flag }}
+runs:
+  using: composite
+  steps:
+    - id: set-outputs
+      shell: bash
+      run: |
+        echo "foo=bar" >> $GITHUB_OUTPUT
+        echo "count=42" >> $GITHUB_OUTPUT
+        echo "flag=true" >> $GITHUB_OUTPUT

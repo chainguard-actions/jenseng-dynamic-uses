@@ -1,0 +1,26 @@
+name: Simple Output Action
+description: A simple fixture action that sets outputs for testing dynamic-uses
+inputs:
+  greeting:
+    description: A greeting input
+    required: false
+    default: hello
+  name:
+    description: A name input
+    required: false
+    default: world
+outputs:
+  result:
+    description: A result output
+    value: ${{ steps.set-outputs.outputs.result }}
+  greeting-out:
+    description: The greeting output
+    value: ${{ steps.set-outputs.outputs.greeting-out }}
+runs:
+  using: composite
+  steps:
+    - id: set-outputs
+      shell: bash
+      run: |
+        echo "result=${{ inputs.greeting }}-${{ inputs.name }}" >> $GITHUB_OUTPUT
+        echo "greeting-out=${{ inputs.greeting }}" >> $GITHUB_OUTPUT
