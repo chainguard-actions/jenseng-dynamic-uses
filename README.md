@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v1 | [`v1`](https://github.com/chainguard-actions/jenseng-dynamic-uses/tree/v1) | [`8bc24f0`](https://github.com/jenseng/dynamic-uses/commit/8bc24f0360175e710da532c4d19eafdbed489a06) |
+| v1.1.1 | [`v1.1.1`](https://github.com/chainguard-actions/jenseng-dynamic-uses/tree/v1.1.1) | [`8bc24f0`](https://github.com/jenseng/dynamic-uses/commit/8bc24f0360175e710da532c4d19eafdbed489a06) |
 
 ## Privacy
 
