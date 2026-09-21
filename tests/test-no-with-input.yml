@@ -1,0 +1,35 @@
+name: Test dynamic uses with default empty with input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Dynamically call action without providing with input (uses default)
+        id: action
+        uses: .
+        with:
+          uses: ./tests/fixtures/simple-action
+          # 'with' is intentionally omitted to test the default "{}" behavior
+
+      - name: Assert action ran successfully with default inputs
+        env:
+          OUTPUTS: ${{ steps.action.outputs.outputs }}
+        run: |
+          echo "outputs: $OUTPUTS"
+          if [ -z "$OUTPUTS" ]; then
+            echo "FAIL: outputs is empty"
+            exit 1
+          fi
+
+          STATUS=$(echo "$OUTPUTS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null || echo "")
+          echo "status: $STATUS"
+
+          if [ "$STATUS" != "ok" ]; then
+            echo "FAIL: expected status=ok, got: $STATUS"
+            exit 1
+          fi
+
+          echo "PASS: action ran successfully with default inputs"

@@ -1,0 +1,34 @@
+name: Test basic dynamic uses
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Test dynamic uses with local fixture action
+        id: action
+        uses: .
+        with:
+          uses: ./tests/fixtures/simple-action
+          with: |
+            greeting: hello
+            name: world
+
+      - name: Assert outputs JSON contains hello=world
+        env:
+          OUTPUTS: ${{ steps.action.outputs.outputs }}
+        run: |
+          echo "outputs: $OUTPUTS"
+          if [ -z "$OUTPUTS" ]; then
+            echo "FAIL: outputs is empty"
+            exit 1
+          fi
+          HELLO=$(echo "$OUTPUTS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('hello',''))" 2>/dev/null || echo "")
+          echo "hello: $HELLO"
+          if [ "$HELLO" != "world" ]; then
+            echo "FAIL: expected hello=world in outputs, got: $OUTPUTS"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,46 @@
+name: Test dynamic uses with inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Dynamically call fixture action with specific inputs
+        id: action
+        uses: .
+        with:
+          uses: ./tests/fixtures/simple-action
+          with: |
+            greeting: greetings
+            name: tester
+            count: "99"
+
+      - name: Assert result output contains passed inputs
+        env:
+          OUTPUTS: ${{ steps.action.outputs.outputs }}
+        run: |
+          echo "outputs: $OUTPUTS"
+          if [ -z "$OUTPUTS" ]; then
+            echo "FAIL: outputs is empty"
+            exit 1
+          fi
+
+          RESULT=$(echo "$OUTPUTS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('result',''))" 2>/dev/null || echo "")
+          COUNT=$(echo "$OUTPUTS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('count',''))" 2>/dev/null || echo "")
+
+          echo "result: $RESULT"
+          echo "count: $COUNT"
+
+          if [ "$RESULT" != "greetings tester" ]; then
+            echo "FAIL: expected result='greetings tester', got: $RESULT"
+            exit 1
+          fi
+
+          if [ "$COUNT" != "99" ]; then
+            echo "FAIL: expected count=99, got: $COUNT"
+            exit 1
+          fi
+
+          echo "PASS: inputs passed through correctly"

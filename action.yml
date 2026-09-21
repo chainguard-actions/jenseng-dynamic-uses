@@ -1,0 +1,66 @@
+name: Dynamic Uses
+description: Dynamically resolve and use another GitHub action. Workaround for https://github.com/actions/runner/issues/895
+author: Jon Jensen
+inputs:
+  uses:
+    description: Action reference or path, e.g. `actions/setup-node@v3`
+    required: true
+  with:
+    description: 'YAML/JSON string of `inputs` for the action, e.g. `node-version: 18` or `{"node-version": "18"}`'
+    required: false
+    default: "{}"
+outputs:
+  outputs:
+    description: 'JSON-ified `outputs` from the action, e.g. `{"node-version": "v18.12.0", "cache-hit": true}`'
+    value: ${{ steps.run.outputs.outputs }}
+runs:
+  using: composite
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    - name: Setup
+      shell: bash
+      env:
+        uses: ${{ inputs.uses }}
+        with: ${{ inputs.with }}
+        DOLLAR: '$'
+        BACKSLASH_DOLLAR: '\$'
+      run: |
+        mkdir -p ./.tmp-dynamic-uses &&
+        cat <<DYNAMIC_USES_EOF >./.tmp-dynamic-uses/action.yml
+        outputs:
+          outputs:
+            value: ${BACKSLASH_DOLLAR}{{ toJSON(steps.run.outputs) }}
+        runs:
+          using: composite
+          steps:
+          - run: rm -rf ./.tmp-dynamic-uses
+            shell: bash
+          - name: Run
+            id: run
+            uses: '$(echo "$uses" | sed "s/'/''/g")'
+            with:
+        $(echo "$with" | sed -E "s/^/      /; s/\\\$\\\{\\\{/${DOLLAR}{{${BACKSLASH_DOLLAR}{{/g")
+        DYNAMIC_USES_EOF
+    - name: Run
+      id: run
+      uses: ./.tmp-dynamic-uses
+    - name: Cleanup
+      if: always() && steps.run.outcome != 'success'
+      shell: bash
+      run: rm -rf ./.tmp-dynamic-uses

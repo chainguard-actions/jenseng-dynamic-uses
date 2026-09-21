@@ -1,0 +1,46 @@
+name: Simple Test Action
+description: A simple action for testing dynamic-uses
+inputs:
+  greeting:
+    description: A greeting message
+    required: false
+    default: hello
+  name:
+    description: A name
+    required: false
+    default: world
+  count:
+    description: A count value
+    required: false
+    default: "42"
+outputs:
+  result:
+    description: The greeting result
+    value: ${{ steps.run.outputs.result }}
+  foo:
+    description: A foo value
+    value: ${{ steps.run.outputs.foo }}
+  count:
+    description: The count value
+    value: ${{ steps.run.outputs.count }}
+  status:
+    description: Status output
+    value: ${{ steps.run.outputs.status }}
+  hello:
+    description: Hello output
+    value: ${{ steps.run.outputs.hello }}
+runs:
+  using: composite
+  steps:
+    - id: run
+      shell: bash
+      env:
+        INPUT_GREETING: ${{ inputs.greeting }}
+        INPUT_NAME: ${{ inputs.name }}
+        INPUT_COUNT: ${{ inputs.count }}
+      run: |
+        echo "result=$INPUT_GREETING $INPUT_NAME" >> $GITHUB_OUTPUT
+        echo "foo=bar" >> $GITHUB_OUTPUT
+        echo "count=$INPUT_COUNT" >> $GITHUB_OUTPUT
+        echo "status=ok" >> $GITHUB_OUTPUT
+        echo "hello=world" >> $GITHUB_OUTPUT
