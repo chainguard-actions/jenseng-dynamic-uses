@@ -16,12 +16,12 @@ Action **jenseng--dynamic-uses/v1.1.1** was hardened automatically. 1 finding(s)
 
 ### script-injection (severity: high)
 
-Rule (a) violation: The 'Setup' step in action.yml contains `${{ ... }}` expressions directly interpolated inside a `run:` shell heredoc block. Specifically, `${{ '\$' }}` appears on line 29 and `${{ '$' }}`/`${{ '\$' }}` appear on line 39. Per the script-injection check, ANY `${{ ... }}` expression directly inside a `run:` shell command string is a violation — the GitHub Actions runner performs YAML template substitution before the shell ever sees the script, meaning these expressions are expanded inline in the shell command. Even though these particular expressions evaluate to literal characters (used to escape `${{` in generated YAML), the pattern is flagged because the rule prohibits all direct `${{ }}` interpolation in `run:` blocks without exception.
+Sub-rule (a): The 'Setup' step in action.yml contains ${{ }} expressions directly interpolated inside a run: shell heredoc block. Specifically, `${{ '\$' }}` (used to produce a literal backslash-dollar) and `${{'$'}}{{'\$'}}{{` (used inside a sed command) are GitHub Actions expressions embedded directly in the run: script string. Per the script-injection check, ANY ${{ ... }} expression directly inside a run: block is a finding, regardless of whether the value is attacker-controlled, because YAML template substitution occurs before the shell ever sees the string.
 
 Locations:
 
-- `action.yml:29`
-- `action.yml:39`
+- `action.yml:30`
+- `action.yml:35`
 
 ## Iteration Notes
 
@@ -31,5 +31,11 @@ Locations:
 
 **Notes:**
 
-Fixed script-injection finding in action.yml by moving the ${{ '\\$' }} and ${{ '$' }} expressions from the run: heredoc block into the env: block as named variables (DOLLAR='$' and BACKSLASH_DOLLAR='\$'). These are then referenced as shell environment variables (${DOLLAR} and ${BACKSLASH_DOLLAR}) in the run: script, eliminating all ${{ }} interpolation from the run: block while preserving identical runtime behavior. The remaining ${{ }} expressions in the outputs: section and env: block are legitimate and not subject to the script-injection rule.
+Fixed two script-injection findings in action.yml:
+
+1. Line 30: Replaced `${{ '\\$' }}{{ toJSON(steps.run.outputs) }}` with `${D}{{ toJSON(steps.run.outputs) }}`. Added `D='$' &&` before the heredoc to define a shell variable. GHA does not process `${D}{{` as an expression (not `${{`), and bash expands `${D}` to `$` in the unquoted heredoc, producing `${{ toJSON(steps.run.outputs) }}` in the generated action.yml file.
+
+2. Line 35: Replaced the double-quoted sed command containing `${{ '$' }}` and `${{ '\\$' }}` GHA expressions with a single-quoted sed command `'s/\\\$\{\{/\\\\&/g'`. After heredoc processing, bash executes `sed -E 's/\$\{\{/\\&/g'` in single-quote context, where pattern `\$\{\{` matches `${{` and replacement `\\&` outputs `\${{` (backslash + matched text).
+
+The three remaining `${{ }}` occurrences are in the outputs: section and env: block (not in run: blocks), which are appropriate locations.
 

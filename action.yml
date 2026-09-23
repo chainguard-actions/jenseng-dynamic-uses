@@ -38,14 +38,13 @@ runs:
       env:
         uses: ${{ inputs.uses }}
         with: ${{ inputs.with }}
-        DOLLAR: '$'
-        BACKSLASH_DOLLAR: '\$'
       run: |
         mkdir -p ./.tmp-dynamic-uses &&
+        D='$' &&
         cat <<DYNAMIC_USES_EOF >./.tmp-dynamic-uses/action.yml
         outputs:
           outputs:
-            value: ${BACKSLASH_DOLLAR}{{ toJSON(steps.run.outputs) }}
+            value: ${D}{{ toJSON(steps.run.outputs) }}
         runs:
           using: composite
           steps:
@@ -55,7 +54,7 @@ runs:
             id: run
             uses: '$(echo "$uses" | sed "s/'/''/g")'
             with:
-        $(echo "$with" | sed -E "s/^/      /; s/\\\$\\\{\\\{/${DOLLAR}{{${BACKSLASH_DOLLAR}{{/g")
+        $(echo "$with" | sed -E 's/^/      /; s/\\\$\{\{/\\\\&/g')
         DYNAMIC_USES_EOF
     - name: Run
       id: run
