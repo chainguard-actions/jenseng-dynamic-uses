@@ -1,0 +1,17 @@
+name: Multi Output Test Action
+description: A simple action that sets multiple outputs for testing
+outputs:
+  foo:
+    description: First output
+    value: ${{ steps.run.outputs.foo }}
+  count:
+    description: Second output
+    value: ${{ steps.run.outputs.count }}
+runs:
+  using: composite
+  steps:
+    - id: run
+      shell: bash
+      run: |
+        echo "foo=bar" >> $GITHUB_OUTPUT
+        echo "count=42" >> $GITHUB_OUTPUT

@@ -1,0 +1,17 @@
+name: Simple Test Action
+description: A simple action that sets a predictable output for testing
+inputs:
+  greeting:
+    description: A greeting input
+    required: false
+    default: hello
+outputs:
+  result:
+    description: The result output
+    value: ${{ steps.run.outputs.result }}
+runs:
+  using: composite
+  steps:
+    - id: run
+      shell: bash
+      run: echo "result=${{ inputs.greeting }}-dynamic" >> $GITHUB_OUTPUT

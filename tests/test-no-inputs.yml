@@ -1,0 +1,32 @@
+name: Test dynamic uses with no extra inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Dynamically call local fixture action with default empty inputs
+        id: action
+        uses: .
+        with:
+          uses: ./tests/fixtures/simple-action
+          # 'with' is intentionally omitted to test the default '{}'
+
+      - name: Assert outputs is valid JSON (even if empty object)
+        env:
+          OUTPUTS: ${{ steps.action.outputs.outputs }}
+        run: |
+          echo "outputs: $OUTPUTS"
+          # outputs should be valid JSON (at minimum '{}' or 'null')
+          if [ -z "$OUTPUTS" ]; then
+            echo "FAIL: outputs is empty string"
+            exit 1
+          fi
+          # Validate it's parseable JSON
+          if ! echo "$OUTPUTS" | python3 -c "import sys, json; json.load(sys.stdin)" 2>/dev/null; then
+            echo "FAIL: outputs is not valid JSON: $OUTPUTS"
+            exit 1
+          fi
+          echo "PASS: outputs is valid JSON"
