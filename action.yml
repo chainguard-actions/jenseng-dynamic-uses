@@ -41,6 +41,7 @@ runs:
       run: |
         mkdir -p ./.tmp-dynamic-uses &&
         D='$' &&
+        escaped_with=$(echo "$with" | sed -E "s/^/      /; s/\\${D}\\{\\{/${D}{{'${D}'}}{{/g") &&
         cat <<DYNAMIC_USES_EOF >./.tmp-dynamic-uses/action.yml
         outputs:
           outputs:
@@ -54,7 +55,7 @@ runs:
             id: run
             uses: '$(echo "$uses" | sed "s/'/''/g")'
             with:
-        $(echo "$with" | sed -E 's/^/      /; s/\\\$\{\{/\\\\&/g')
+        ${escaped_with}
         DYNAMIC_USES_EOF
     - name: Run
       id: run
