@@ -43,7 +43,7 @@ runs:
         cat <<DYNAMIC_USES_EOF >./.tmp-dynamic-uses/action.yml
         outputs:
           outputs:
-            value: ${{ '\$' }}{{ toJSON(steps.run.outputs) }}
+            value: $(printf '%s' '$'){{ toJSON(steps.run.outputs) }}
         runs:
           using: composite
           steps:
@@ -53,7 +53,7 @@ runs:
             id: run
             uses: '$(echo "$uses" | sed "s/'/''/g")'
             with:
-        $(echo "$with" | sed -E "s/^/      /; s/\\\$\\{\\{/\${{'$'}}{{'\$'}}{{/g")
+        $(echo "$with" | sed -E "s/^/      /; s/\\\$\\{\\{/\$""{{'\$'}}{{/g")
         DYNAMIC_USES_EOF
     - name: Run
       id: run
